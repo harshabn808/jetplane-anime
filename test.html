@@ -1,0 +1,157 @@
+<html>
+<head>
+</head>
+<body>
+	
+	<script>
+	(function(){
+		Function.prototype.bind = Function.prototype.bind || function(fixThis) {
+		  var func = this  
+		  return function() {
+		    return func.apply(fixThis, arguments)
+		  }
+		}	  
+		var html = document.documentElement;
+	  var requestAnimationFrame = window.requestAnimationFrame       ||
+	                               window.webkitRequestAnimationFrame ||
+	                               window.mozRequestAnimationFrame    ||
+	                               function(func) { setTimeout(func, 17); };
+    var JET_IMG_SRC =  "jet.png"
+		var jet_img = new Image();
+		jet_img.src = JET_IMG_SRC; 																 
+																 
+		var Stage = function(canvas){
+			this.canvas = canvas;
+			this.ctx = canvas.getContext('2d');
+			this.objects = [];
+			return this;
+		};
+		
+		Stage.prototype.frame = function() {
+			//clear the stage(canvas);
+			if(!this.ctx) {
+				debugger
+				console.log("ctx not present")				
+				return;
+			}
+			this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
+			
+			//call tick on all the objects on stage
+			for(var i in this.objects){
+				this.objects[i].tick(this.ctx)
+			}
+			
+			//recursivily call itself
+			requestAnimationFrame(this.frame.bind(this))
+		};
+		
+		Stage.prototype.setup = function(resources) {
+			//this.ctx.translate(0, this.ctx.canvas.height);
+      //this.ctx.translate(1, -1) 
+
+      setTimeout(function(){
+				var jet1 = new JetPlane(resources.jet_img, 10, this.ctx.canvas.height,"255, 153, 51");
+				this.objects.push(jet1);	
+      }.bind(this), 500);
+			
+
+			var jet2 = new JetPlane(resources.jet_img, 50, this.ctx.canvas.height, "222, 222, 222");
+			this.objects.push(jet2);
+      
+			setTimeout(function(){
+				var jet3 = new JetPlane(resources.jet_img, 90, this.ctx.canvas.height, "0, 128, 0");
+				this.objects.push(jet3);	
+      }.bind(this), 500);
+			
+		};
+	
+		var JetPlane = function(img, initX, initY, smoke_rgb) {
+			this.img = img
+			this.x = initX ;
+			this.y = initY ;
+			this.smoke_particles_list = [];
+			this.smoke_rgb = smoke_rgb;
+			return this;
+		};
+
+		JetPlane.prototype.tick = function(ctx) {
+			//this.x = this.x + 5;
+			this.y = this.y-5;// PathEquation.type1(this.y) ;
+		  ctx.drawImage(this.img, this.x, this.y);
+			if(this.smoke_particles_list.length < 100){
+				var smoke_particle = new SmokeParticle(this, this.x+12, this.y+30+Math.random()*5, this.smoke_rgb)
+				this.smoke_particles_list.push(smoke_particle);
+			}	
+			for(var i in this.smoke_particles_list) {
+				 this.smoke_particles_list[i].tick(ctx);
+			}
+		};	
+		
+		JetPlane.prototype.removeSmoke = function(smoke_particle) {
+			this.smoke_particles_list.splice(this.smoke_particles_list.indexOf(smoke_particle), 1);
+			
+		};
+		
+		var PathEquation = {
+			type1:function(x) {
+				return x+5;
+			}
+		}
+		
+		var SmokeParticle = function (target_obj, paramX, paramY, rgb) {
+		        this.x=paramX;
+		        this.y=paramY;
+		        this.opacity=0.5;
+		        this.radius=1.5;
+		        this.rgb = rgb;
+						this.target_obj = target_obj;
+		};
+		
+		SmokeParticle.prototype.tick = function(ctx) {
+				                ctx.save();
+
+				                ctx.beginPath();
+				                ctx.fillStyle = 'rgba(' + this.rgb + ',' + this.opacity + ')';
+				                ctx.shadowColor   = 'rgba(' + this.rgb + ',1)';
+
+				                ctx.shadowBlur    = 10;
+
+				                ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
+				                ctx.fill();
+
+				                this.radius = this.radius + 0.05;
+				                this.opacity = this.opacity - 0.007;
+				                if(this.opacity <= 0) this.target_obj.removeSmoke(this);
+
+				                ctx.restore();
+				        };
+		
+		
+		(function(){
+			
+			var canvas = document.createElement('canvas');
+			canvas.height = html.clientHeight;
+			canvas.width = html.clientWidth;
+			var canvasStyle = canvas.style;
+			canvasStyle.position = 'fixed';
+			canvasStyle.top = 0;
+			canvasStyle.left = 0;
+			canvasStyle.zIndex = 1138;
+			canvasStyle['pointerEvents'] = 'none';
+      document.body.appendChild(canvas);
+			var stage = new Stage(canvas);
+			
+			jet_img.onload = function(){
+				stage.setup({"jet_img":jet_img});				
+				requestAnimationFrame(stage.frame.bind(stage))									
+			}
+			
+		})();
+	 
+		
+	})();
+	
+	
+	</script>
+</body>
+</html>	
